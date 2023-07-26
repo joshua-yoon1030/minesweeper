@@ -1,8 +1,8 @@
 var board = [];
-var rows = 8;
-var columns = 8;
+var rows = 16;
+var columns = 16;
 
-var minesCount = 5;
+var minesCount = 30;
 var minesLocation = [];
 
 var tilesClicked = 0;
@@ -40,13 +40,14 @@ function startGame() {
             let tile = document.createElement("div");
             tile.id = r.toString() + "-" + c.toString();
             tile.addEventListener("click", clickTile);
+            tile.addEventListener("auxclick", rightClickTile);
+            tile.addEventListener("contextmenu", event => event.preventDefault());
             document.getElementById("board").append(tile);
             row.push(tile);
         }
         board.push(row);
     }
 
-    console.log(board);
 }
 
 function setFlag(){
@@ -61,6 +62,7 @@ function setFlag(){
 }
 
 function clickTile() {
+    console.log("default");
     if(gameOver || this.classList.contains("tile-clicked")){
         return;
     }
@@ -94,6 +96,91 @@ function clickTile() {
     checkMine(r,c);
 }
 
+function clickTileTargeted(r,c){
+    console.log("special");
+    if( r < 0 || r >= rows || c < 0 || c>= columns){
+        return;
+    }
+    if(gameOver || board[r][c].classList.contains("tile-clicked")){
+        return;
+    }
+    if(board[r][c].innerText == "🚩"){
+        return;
+    }
+
+    if(minesLocation.includes(board[r][c].id)){
+        alert("Game over");
+        gameOver = true;
+        revealMines();
+        return;
+    }
+
+    checkMine(r,c);
+}
+
+
+function rightClickTile(){
+    if(gameOver){
+        return;
+    }
+
+    let tile = this;
+
+    if(!this.classList.contains("tile-clicked")){
+        if (tile.innerText == ""){
+            tile.innerText = "🚩";
+            flagsClicked += 1
+        }
+        else if (tile.innerText == "🚩"){
+            tile.innerText = "";
+            flagsClicked -= 1
+        }
+        document.getElementById("mines-count").innerText = (minesCount - flagsClicked).toString();
+        return;
+    }
+
+    let coords = tile.id.split("-");
+    let r = parseInt(coords[0]);
+    let c = parseInt(coords[1]);
+
+    let flagsFound = 0;
+    
+    flagsFound += isFlag(r-1, c-1);
+    flagsFound += isFlag(r-1, c);
+    flagsFound += isFlag(r-1, c+1);
+
+    flagsFound += isFlag(r, c-1);
+    flagsFound += isFlag(r, c+1);
+
+    flagsFound += isFlag(r+1, c-1);
+    flagsFound += isFlag(r+1, c);
+    flagsFound += isFlag(r+1, c+1);
+
+    if(flagsFound.toString() == tile.innerText){
+        clickTileTargeted(r-1, c-1);
+        clickTileTargeted(r-1, c);
+        clickTileTargeted(r-1, c+ 1);
+
+        clickTileTargeted(r, c-1);
+        clickTileTargeted(r, c+1);
+
+        clickTileTargeted(r+1, c-1);
+        clickTileTargeted(r+1, c);
+        clickTileTargeted(r+1, c+ 1);
+    }
+
+}
+
+function isFlag(r,c){
+    if( r < 0 || r >= rows || c < 0 || c>= columns){
+        return 0;
+    }
+    if(board[r][c].innerText == "🚩"){
+        return 1;
+    } 
+    return 0;
+}
+
 function revealMines() {
     for (let r = 0; r < rows; r ++){
         for (let c = 0; c < columns; c++){
@@ -111,7 +198,7 @@ function checkMine(r,c){
         return;
     }
 
-    if(board[r][c].classList.contains("tile-clicked")){
+    if(board[r][c].classList.contains("tile-clicked") || board[r][c].innerText == "🚩"){
         return;
     }
 
